@@ -31,3 +31,11 @@ bash:
 # Roda os logs
 logs:
 	docker-compose logs -f
+
+# Reseta o banco de dados e limpa o cache (Cuidado: Apaga tudo!)
+reset:
+	@echo "🧨 Resetando banco de dados..."
+	docker-compose exec app php artisan migrate:fresh --force
+	@echo "🧹 Limpando cache e chaves de idempotência..."
+	docker-compose exec app php artisan cache:clear
+	@echo "✅ Reset concluído! Lembre-se de criar um novo usuário."

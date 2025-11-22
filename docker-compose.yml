@@ -24,7 +24,7 @@ services:
         volumes:
             - ./:/var/www
         # O worker processa os jobs da fila
-        command: "php artisan queue:work --tries=3 --timeout=90"
+        command: "php artisan queue:work --verbose --tries=3 --timeout=90"
         networks:
             - wallet-network
         depends_on:

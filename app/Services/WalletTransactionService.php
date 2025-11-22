@@ -138,8 +138,8 @@ class WalletTransactionService
             $this->repository->updateProjection($payeeWalletId, $payeeAggregate->getBalance());
             
             // 5. Disparo de Webhook (Fase de Bônus)
-            // Vamos adicionar isso na próxima etapa, mas aqui seria o lugar:
-            // event(new TransferProcessed($eventReceived));
+            // Dispara assincronamente para a fila Redis
+            \App\Jobs\SendTransactionNotification::dispatch($payeeUserId, $amount);
 
             return [
                 'transaction_id' => $payerWalletId . '-' . time(), // Id fictício de rastreio
