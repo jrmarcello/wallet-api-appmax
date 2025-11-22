@@ -61,4 +61,42 @@ describe('Wallet Transfer', function () {
             'amount' => 100
         ], ['Authorization' => "Bearer $token"])->assertStatus(422);
     });
+
+    test('transfer triggers webhook notification to target user url', function () {
+        // 1. Mock do HTTP (Impede requisição real e permite verificação)
+        Illuminate\Support\Facades\Http::fake();
+
+        // 2. Setup A (Sender)
+        $userA = User::factory()->create();
+        Wallet::create(['user_id' => $userA->id, 'balance' => 0, 'version' => 1]);
+        $tokenA = auth('api')->login($userA);
+
+        // 3. Setup B (Receiver) com Webhook Configurado
+        $targetUrl = 'https://loja-do-b.com/notify';
+        $userB = User::factory()->create(['email' => 'receiver-web@test.com', 'webhook_url' => $targetUrl]);
+        Wallet::create(['user_id' => $userB->id, 'balance' => 0, 'version' => 1]);
+
+        // 4. Depósito inicial em A
+        postJson('/api/wallet/deposit', ['amount' => 1000], [
+            'Authorization' => "Bearer $tokenA",
+            'Idempotency-Key' => 'setup-' . uniqid()
+        ]);
+
+        // 5. Transferir A -> B
+        postJson('/api/wallet/transfer', [
+            'target_email' => $userB->email,
+            'amount' => 500
+        ], [
+            'Authorization' => "Bearer $tokenA",
+            'Idempotency-Key' => 'trans-webhook-' . uniqid()
+        ])->assertStatus(200);
+
+        // 6. Asserção: Verifique se o sistema tentou chamar a URL do User B
+        // Nota: Em testes, o Queue driver padrão é 'sync', então o job roda na hora.
+        Illuminate\Support\Facades\Http::assertSent(function (\Illuminate\Http\Client\Request $request) use ($targetUrl) {
+            return $request->url() == $targetUrl &&
+                   $request['event'] == 'transfer_received' &&
+                   $request['amount'] == 500;
+        });
+    });
 });

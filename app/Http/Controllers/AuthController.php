@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\UpdateWebhookRequest;
 use App\Http\Traits\ApiResponse;
 use App\Models\User;
 use App\Models\Wallet;
@@ -92,5 +93,23 @@ class AuthController extends Controller
     {
         $this->guard()->logout();
         return $this->success(null, 'Successfully logged out');
+    }
+
+    /**
+     * Atualiza a URL de Webhook do usuário autenticado
+     */
+    public function updateWebhook(UpdateWebhookRequest $request): JsonResponse
+    {
+        /** @var User $user */
+        $user = $this->guard()->user();
+        
+        $user->update([
+            'webhook_url' => $request->url
+        ]);
+
+        return $this->success(
+            ['webhook_url' => $user->webhook_url], 
+            'Webhook configuration updated successfully'
+        );
     }
 }
