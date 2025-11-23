@@ -1,105 +1,94 @@
 # MISSION DIRECTIVE
-You are an expert Staff Software Engineer acting as the primary maintainer of this project. 
-This is NOT a standard CRUD application. It is a High-Fidelity Financial Wallet API using **Event Sourcing** and **CQRS**.
 
-All generated code must adhere strictly to the constraints defined below. Prioritize data consistency, atomic transactions, and idempotent behavior over implementation speed.
+Você é Staff Engineer e maintainer desta API de carteira digital. Arquitetura: Event Sourcing + CQRS (Lite) + DDD. Priorize consistência, atomicidade e idempotência.
 
----
+## TECH & ENV
 
-## 1. TECH STACK & ENVIRONMENT
-- **Language:** PHP 8.2+ (Strict Types Enabled)
-- **Framework:** Laravel 11.x
-- **Database:** MySQL 8.0 (Production) / Redis (Cache & Queue)
-- **Primary Keys:** ULID (via `Illuminate\Database\Eloquent\Concerns\HasUlids`). NO UUIDv4. NO Auto-increment integers.
-- **Testing:** Pest PHP (`tests/Feature` mainly).
+- PHP 8.2+ (strict types).
+- Laravel 11.x.
+- MySQL 8.0 (produção e testes), Redis (cache/fila).
+- PKs: ULID (`HasUlids`). Nunca UUIDv4 ou auto-increment.
+- Testes: Pest (feature-first) rodando em MySQL real.
 
----
+## ARQUITETURA (DDD + EVENT SOURCING)
 
-## 2. ARCHITECTURAL RULES (STRICT)
+- Aggregates (write model): `app/Domain/Wallet` (puro PHP, sem Eloquent/container). Regras de negócio só aqui.
+- Eventos: `app/Domain/Wallet/Events` (DTOs imutáveis, nomes no passado).
+- Serviços de domínio/orquestração: `app/Domain/Wallet/Services`.
+- Projeções (read model): `app/Models` (Eloquent). Atualizadas sincronicamente na MESMA transação.
+- Controllers: finos; Validar input -> chamar serviço -> retornar DTO/Resource/ApiResponse.
+- Fonte da verdade: tabela `stored_events`. Read cache: tabela `wallets`.
+- Fluxo obrigatório de escrita:
+  1) `DB::transaction`
+  2) Lock pessimista na linha de `wallets`
+  3) Carrega histórico de `stored_events`
+  4) Replay do aggregate
+  5) Executa comando -> novo evento
+  6) Persiste evento em `stored_events`
+  7) Atualiza projeção `wallets`
+  8) Commit
 
-### A. Domain Driven Design (DDD)
-1.  **Aggregates (Write Model):** Located in `app/Domain/Wallet`.
-    - Must be **Pure PHP** classes. DO NOT extend Eloquent models.
-    - DO NOT depend on the database or container.
-    - Logic for business rules (e.g., "Insufficient Funds") resides ONLY here.
-    - Must accept `History` (events), reconstitute state, and return a *New Event*.
-2.  **Projections (Read Model):** Located in `app/Models`.
-    - These are "dumb" snapshots for fast reading (e.g., `Wallet` model with `balance` column).
-    - They are updated *synchronously* within the transaction flow to ensure Strong Consistency for the user.
-3.  **Controllers:**
-    - Must be "skinny". Never contain business logic.
-    - Only orchestrate: Validate Input -> Call Service -> Return DTO/Resource.
+## IDEMPOTÊNCIA
 
-### B. Event Sourcing Protocol
-We do not mutate the "source of truth" directly.
-1.  **Source of Truth:** The `stored_events` table.
-2.  **Read Optimizations:** The `wallets` table (is just a cache).
-3.  **Transaction Flow:**
-    - Start DB Transaction.
-    - Lock `wallets` row (Read Model) for Update (Pessimistic Lock).
-    - Load history from `stored_events` for this aggregate.
-    - Replay Aggregate to memory.
-    - Execute Command on Aggregate -> Receive `NewEvent`.
-    - Persist `NewEvent` to `stored_events`.
-    - Project/Update `wallets` table balance.
-    - Commit Transaction.
+- Middleware: `App\Http\Middleware\CheckIdempotency`.
+- POST `/deposit`, `/withdraw`, `/transfer` exigem header `Idempotency-Key`.
+- Chave existente: retorna resposta cacheada (status + JSON). Ausente: executa e cacheia (TTL 24h).
 
-### C. Idempotency
-- **Middleware:** `App\Http\Middleware\CheckIdempotency`.
-- **Rule:** Any `POST` to `/deposit`, `/withdraw`, or `/transfer` MUST have an `Idempotency-Key` header.
-- **Mechanism:** 
-  - Key exists? Return cached response (status + json). 
-  - Key missing? Execute -> Cache Result (TTL 24h).
+## DADOS & MONEY
 
----
+- Valores monetários: `int` em centavos (100 = R$1,00). Não aceite floats/decimals de input.
+- Erros: use `App\Http\Responses\ApiResponse`.
+- Exceptions de domínio (ex.: `InsufficientFundsException`) mapeadas em `bootstrap/app.php` para 400/422.
 
-## 3. CODING STANDARDS
+## NOMES & CONVENÇÕES
 
-### Data & Money
-- **Integers Only:** All monetary values are in *centavos* (cents).
-- **Pattern:** `100` = R$ 1.00.
-- **Validation:** Never accept floats from API input. Reject decimals.
+- Eventos: verbo no passado (ex.: `FundsDeposited`, `FundsWithdrawn`, `TransferSent`).
+- Controllers: `ResourceActionController` (ex.: `WalletDepositController`) em vez de monolíticos.
+- Tabelas: plural (`users`, `wallets`, `stored_events`).
 
-### Error Handling
-- Use `App\Http\Responses\ApiResponse` for standardized JSON envelopes.
-- Throw Custom Exceptions (`InsufficientFundsException`) and map them to HTTP 400/422 in `bootstrap/app.php`.
+## ESTRUTURA DE PASTAS
 
-### Naming Conventions
-- **Events:** Verbs in Past Tense (`FundsDeposited`, `TransferSent`).
-- **Controllers:** `ResourceActionController` (e.g., `WalletDepositController`) is preferred over monolithic controllers.
-- **Tables:** Plural (`users`, `wallets`, `stored_events`).
-
----
-
-## 4. FILE STRUCTURE MAP
-
-```text
 app/
-├── Domain/              <-- PURE DOMAIN (Write Logic)
+├── Domain/
 │   └── Wallet/
-│       ├── Events/      <-- Immutable DTOs
+│       ├── Events/
 │       ├── WalletAggregate.php
-│       └── Services/    <-- Complex Orchestration (Transfer)
+│       └── Services/
 ├── Infrastructure/
-│   └── Services/        <-- Third-party impl (Mail, S3)
+│   └── Services/        # integrações externas
 ├── Http/
-│   ├── Controllers/     <-- Input entry points
-│   ├── Requests/        <-- Strict Validation
-│   └── Responses/       <-- JSON Standardization
-└── Models/              <-- READ MODELS (Eloquent)
-```
+│   ├── Controllers/
+│   ├── Requests/
+│   └── Responses/
+└── Models/              # projeções Eloquent
 
----
+## MIGRATIONS ATIVAS
 
-## 5. TESTING STRATEGY (PEST)
+- `0001_01_01_000000_create_users_table.php`
+- `0001_01_01_000002_create_jobs_table.php`
+- `2025_11_22_143155_create_wallet_domain_tables.php` (wallets, stored_events, idempotency_keys)
 
-Every new feature must include a **Feature Test**.
-**Scenario Requirements:**
-1.  **Happy Path:** assert DB `wallets` updated AND `stored_events` created.
-2.  **Invariant Violation:** assert `withdraw(balance + 1)` throws Exception and DB is untouched.
-3.  **Race Condition (Crucial):** Use logical process locking logic (mocks) to simulate concurrent requests ensuring negative balance never happens.
+## TESTES (PEST)
 
-## 6. SPECIFIC "DON'Ts" FOR AI
-- **DO NOT** add methods like `increment()` or `decrement()` directly on the Wallet Controller without generating an event.
-- **DO NOT** forget `DB::transaction` on financial operations.
-- **DO NOT** use `float` type hints. Use `int`.
+- Sempre adicionar Feature Test por feature.
+- Cobrir: (1) happy path (wallets atualizado + stored_events criado), (2) invariant violation (`withdraw(balance+1)` lança e DB intacto), (3) race condition simulada (locks/mocks, saldo nunca negativo).
+- Testes usam MySQL real: `DB_CONNECTION=mysql`, DB `wallet_test`, user `walletuser`, pass `root` (ver `phpunit.xml`).
+
+## COMANDOS MAKE (preferidos)
+
+- `make setup`: sobe containers, cria `wallet_test`, GRANT para `walletuser`, instala deps, gera keys/JWT, `migrate:fresh`.
+- `make test`: `docker-compose exec app ./vendor/bin/pest` (usa MySQL de teste).
+- `make reset`: recria DBs/grants, roda `migrate:fresh` (principal e teste), limpa cache.
+- `make race`: stress test de concorrência (`tests/race_test.sh`).
+
+## DON’Ts (específicos)
+
+- Não usar `increment()/decrement()` direto na projeção; sempre via evento.
+- Não esquecer `DB::transaction` em operações financeiras.
+- Não usar `float` em hints/assinaturas.
+
+## OBSERVAÇÕES
+
+- `.gitignore` ignora `/docs`; remova se quiser versionar docs.
+- `storage/` diretórios padrão devem existir (`storage/framework/views` pode ser limpo com `php artisan view:clear`).
+- Insomnia: `insomnia_wallet_api.json` na raiz; `base_url` = `http://localhost:8000/api`; use webhook URL que sempre retorne 200 (mock/<https://webhook.site/>...).

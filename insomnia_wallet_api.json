@@ -1,0 +1,340 @@
+{
+	"_type": "export",
+	"__export_format": 4,
+	"__export_date": "2025-11-22T18:00:00.000Z",
+	"__export_source": "insomnia.desktop.app:v2023.5.0",
+	"resources": [
+		{
+			"_id": "req_register_a",
+			"parentId": "fld_auth",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"url": "{{ _.base_url }}/auth/register",
+			"name": "1. Register User A (Origem)",
+			"description": "",
+			"method": "POST",
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n\t\"name\": \"User A\",\n\t\"email\": \"user.a@example.com\",\n\t\"password\": \"password123\"\n}"
+			},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Content-Type",
+					"value": "application/json"
+				},
+				{
+					"name": "Accept",
+					"value": "application/json"
+				}
+			],
+			"authentication": {},
+			"metaSortKey": -100,
+			"isPrivate": false,
+			"settingStoreCookies": true,
+			"settingSendCookies": true,
+			"settingDisableRenderRequestBody": false,
+			"settingEncodeUrl": true,
+			"settingRebuildPath": true,
+			"settingFollowRedirects": "global",
+			"_type": "request"
+		},
+		{
+			"_id": "req_register_b",
+			"parentId": "fld_auth",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"url": "{{ _.base_url }}/auth/register",
+			"name": "2. Register User B (Destino)",
+			"description": "",
+			"method": "POST",
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n\t\"name\": \"User B\",\n\t\"email\": \"user.b@example.com\",\n\t\"password\": \"password123\"\n}"
+			},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Content-Type",
+					"value": "application/json"
+				},
+				{
+					"name": "Accept",
+					"value": "application/json"
+				}
+			],
+			"authentication": {},
+			"metaSortKey": -90,
+			"isPrivate": false,
+			"_type": "request"
+		},
+		{
+			"_id": "req_login",
+			"parentId": "fld_auth",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"url": "{{ _.base_url }}/auth/login",
+			"name": "3. Login (Pegar Token)",
+			"description": "Copie o token da resposta e coloque na variável de ambiente 'access_token'",
+			"method": "POST",
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n\t\"email\": \"user.a@example.com\",\n\t\"password\": \"password123\"\n}"
+			},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Content-Type",
+					"value": "application/json"
+				},
+				{
+					"name": "Accept",
+					"value": "application/json"
+				}
+			],
+			"authentication": {},
+			"metaSortKey": -80,
+			"isPrivate": false,
+			"_type": "request"
+		},
+		{
+			"_id": "req_me",
+			"parentId": "fld_auth",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"url": "{{ _.base_url }}/auth/me",
+			"name": "4. Get Me (Check Token)",
+			"description": "",
+			"method": "GET",
+			"body": {},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Accept",
+					"value": "application/json"
+				}
+			],
+			"authentication": {
+				"type": "bearer",
+				"token": "{{ _.access_token }}"
+			},
+			"metaSortKey": -70,
+			"isPrivate": false,
+			"_type": "request"
+		},
+		{
+			"_id": "req_deposit",
+			"parentId": "fld_wallet",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"url": "{{ _.base_url }}/wallet/deposit",
+			"name": "1. Deposit Funds",
+			"description": "Adiciona saldo (R$ 100,00)",
+			"method": "POST",
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n\t\"amount\": 10000\n}"
+			},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Content-Type",
+					"value": "application/json"
+				},
+				{
+					"name": "Accept",
+					"value": "application/json"
+				},
+				{
+					"name": "Idempotency-Key",
+					"value": "{% uuid 'v4' %}",
+					"description": "Gera UUID auto a cada request"
+				}
+			],
+			"authentication": {
+				"type": "bearer",
+				"token": "{{ _.access_token }}"
+			},
+			"metaSortKey": -100,
+			"isPrivate": false,
+			"_type": "request"
+		},
+		{
+			"_id": "req_transfer",
+			"parentId": "fld_wallet",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"url": "{{ _.base_url }}/wallet/transfer",
+			"name": "2. Transfer P2P",
+			"description": "Transfere R$ 50,00 para User B",
+			"method": "POST",
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n\t\"target_email\": \"user.b@example.com\",\n\t\"amount\": 5000\n}"
+			},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Content-Type",
+					"value": "application/json"
+				},
+				{
+					"name": "Accept",
+					"value": "application/json"
+				},
+				{
+					"name": "Idempotency-Key",
+					"value": "{% uuid 'v4' %}"
+				}
+			],
+			"authentication": {
+				"type": "bearer",
+				"token": "{{ _.access_token }}"
+			},
+			"metaSortKey": -90,
+			"isPrivate": false,
+			"_type": "request"
+		},
+		{
+			"_id": "req_withdraw",
+			"parentId": "fld_wallet",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"url": "{{ _.base_url }}/wallet/withdraw",
+			"name": "3. Withdraw Funds",
+			"description": "Saca R$ 10,00",
+			"method": "POST",
+			"body": {
+				"mimeType": "application/json",
+				"text": "{\n\t\"amount\": 1000\n}"
+			},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Content-Type",
+					"value": "application/json"
+				},
+				{
+					"name": "Accept",
+					"value": "application/json"
+				},
+				{
+					"name": "Idempotency-Key",
+					"value": "{% uuid 'v4' %}"
+				}
+			],
+			"authentication": {
+				"type": "bearer",
+				"token": "{{ _.access_token }}"
+			},
+			"metaSortKey": -80,
+			"isPrivate": false,
+			"_type": "request"
+		},
+		{
+			"_id": "req_balance",
+			"parentId": "fld_wallet",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"url": "{{ _.base_url }}/wallet/balance",
+			"name": "4. Get Balance",
+			"description": "",
+			"method": "GET",
+			"body": {},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Accept",
+					"value": "application/json"
+				}
+			],
+			"authentication": {
+				"type": "bearer",
+				"token": "{{ _.access_token }}"
+			},
+			"metaSortKey": -70,
+			"isPrivate": false,
+			"_type": "request"
+		},
+		{
+			"_id": "req_transactions",
+			"parentId": "fld_wallet",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"url": "{{ _.base_url }}/wallet/transactions",
+			"name": "5. Get Statement (Extrato)",
+			"description": "Event Replay",
+			"method": "GET",
+			"body": {},
+			"parameters": [],
+			"headers": [
+				{
+					"name": "Accept",
+					"value": "application/json"
+				}
+			],
+			"authentication": {
+				"type": "bearer",
+				"token": "{{ _.access_token }}"
+			},
+			"metaSortKey": -60,
+			"isPrivate": false,
+			"_type": "request"
+		},
+		{
+			"_id": "env_local",
+			"parentId": "wrk_wallet_api",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"name": "Local Development",
+			"data": {
+				"base_url": "http://localhost:8000/api",
+				"access_token": "COLE_SEU_TOKEN_AQUI"
+			},
+			"dataPropertyOrder": {
+				"&": [
+					"base_url",
+					"access_token"
+				]
+			},
+			"color": "#7d69cb",
+			"isPrivate": false,
+			"metaSortKey": 1700000000000,
+			"_type": "environment"
+		},
+		{
+			"_id": "wrk_wallet_api",
+			"parentId": null,
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"name": "Wallet API (Staff Case)",
+			"description": "",
+			"scope": "collection",
+			"_type": "workspace"
+		},
+		{
+			"_id": "fld_auth",
+			"parentId": "wrk_wallet_api",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"name": "Auth",
+			"description": "",
+			"environment": {},
+			"environmentPropertyOrder": null,
+			"metaSortKey": -100,
+			"_type": "request_group"
+		},
+		{
+			"_id": "fld_wallet",
+			"parentId": "wrk_wallet_api",
+			"modified": 1700000000000,
+			"created": 1700000000000,
+			"name": "Wallet Operations",
+			"description": "",
+			"environment": {},
+			"environmentPropertyOrder": null,
+			"metaSortKey": -90,
+			"_type": "request_group"
+		}
+	]
+}

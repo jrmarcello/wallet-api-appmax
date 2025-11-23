@@ -34,7 +34,7 @@ return new class extends Migration
             $table->index(['aggregate_id', 'occurred_at']);
         });
         
-        // Tabela para persistir Chaves de Idempotência (além do Redis, para auditoria)
+        // Tabela para persistir Chaves de Idempotência (para auditoria)
         Schema::create('idempotency_keys', function (Blueprint $table) {
             $table->string('key')->primary();
             $table->ulid('user_id')->index()->nullable();
