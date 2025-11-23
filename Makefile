@@ -7,18 +7,19 @@
 setup:
 	@echo "🚀 Iniciando setup..."
 	@if [ ! -f .env ]; then cp .env.example .env; fi
+	
+	# Sobe os containers
 	docker-compose up -d --build
 	
 	@echo "📦 Instalando dependências (Composer)..."
 	docker-compose exec app composer install
 
-	@echo "⚓️ Configurando Git Hooks..."
-	docker-compose exec app ./vendor/bin/captainhook install -f -s
+	@echo "🔄 Reiniciando aplicação..."
+	docker-compose restart app
 
 	@echo "⏳ Aguardando MySQL inicializar..."
 	@sleep 10
 
-	# Chama o target auxiliar para configurar bancos
 	$(MAKE) init-db
 
 	@echo "🔑 Gerando chaves..."

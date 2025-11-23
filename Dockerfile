@@ -37,4 +37,7 @@ RUN cp .env.example .env && \
 
 EXPOSE 8000
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# Script de inicialização inteligente:
+# Se vendor existe, roda o servidor.
+# Se não existe, avisa e fica esperando (para permitir o composer install).
+CMD sh -c "if [ -f vendor/autoload.php ]; then php artisan serve --host=0.0.0.0 --port=8000; else echo 'Vendor missing. Waiting for composer install...' && tail -f /dev/null; fi"
