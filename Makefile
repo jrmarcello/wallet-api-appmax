@@ -12,6 +12,9 @@ setup:
 	@echo "📦 Instalando dependências (Composer)..."
 	docker-compose exec app composer install
 
+	@echo "⚓️ Configurando Git Hooks..."
+	docker-compose exec app ./vendor/bin/captainhook install -f -s
+
 	@echo "⏳ Aguardando MySQL inicializar..."
 	@sleep 10
 
@@ -41,7 +44,7 @@ reset-db:
 	@echo "✅ Reset concluído!"
 
 # Limpeza Profunda: Remove containers, redes e VOLUMES
-clean-infra:
+clean:
 	@echo "💥 Destruindo infraestrutura Docker (Containers + Volumes)..."
 	docker-compose down -v --remove-orphans
 	@echo "✅ Infraestrutura limpa. Rode 'make setup' para recriar."

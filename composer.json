@@ -13,6 +13,7 @@
         "php-open-source-saver/jwt-auth": "^2.8"
     },
     "require-dev": {
+        "captainhook/captainhook": "^5.27",
         "fakerphp/faker": "^1.23",
         "larastan/larastan": "^3.8",
         "laravel/pail": "^1.2.2",

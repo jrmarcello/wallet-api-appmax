@@ -22,7 +22,7 @@ Todo o ambiente é containerizado. Você só precisa de **Docker** e **Make** in
    ```
 
 2. **Execute o Setup Automático:**
-   Este comando sobe os containers, instala dependências, gera chaves, roda migrações e cria o banco de testes.
+   Este comando sobe os containers, instala dependências, configura Git Hooks, gera chaves, roda migrações e cria o banco de testes.
 
    ```bash
    make setup
@@ -42,12 +42,12 @@ O projeto foi construído para resolver problemas reais de sistemas financeiros,
 
 * **Write Model:** Tabela `stored_events`. Fonte da verdade imutável.
 * **Read Model:** Tabela `wallets`. Projeção síncrona para leitura rápida de saldo.
-* **Por que:** Garante auditabilidade total e permite replay de transações. A lógica matemática reside no Agregado (`WalletAggregate`), isolada do framework (DDD).
+* **Por que:** Garante auditabilidade total e permite replay de transações. A lógica matemática reside no Agregado (`WalletAggregate`), isolada do framework.
 
 ### 2. Concorrência & Integridade
 
 * **Pessimistic Locking:** Uso de `lockForUpdate()` com ordenação de IDs no MySQL para prevenir **Race Conditions** e **Deadlocks** em transferências simultâneas.
-* **Transações Atômicas:** Tudo (Evento, Projeção, Webhook Dispatch) ocorre dentro de uma transação ACID. Garantir consistencia forte, mesmo em sistemas distribuídos, é fundamental em sistemas financeiros.
+* **Transações Atômicas:** Tudo (Evento, Projeção, Webhook Dispatch) ocorre dentro de uma transação ACID.
 
 ### 3. Resiliência & Idempotência
 
@@ -58,32 +58,44 @@ O projeto foi construído para resolver problemas reais de sistemas financeiros,
 
 ## 🛠️ Comandos Úteis (Makefile)
 
-Simplificamos a interação com o Docker através do `make`. Não é necessário rodar comandos longos do docker-compose.
+Simplificamos a interação com o Docker através do `make`. Não é necessário decorar comandos longos.
 
 | Comando | Descrição |
 | :--- | :--- |
-| `make setup` | **Primeiro uso.** Instala tudo do zero e configura o ambiente. |
+| `make setup` | **Primeiro uso.** Instala tudo do zero e configura hooks. |
 | `make up` | Sobe os containers (App, DB, Redis, Queue). |
 | `make down` | Para os containers. |
 | `make reset-db` | **Reseta o DB**, limpa cache e roda Seeds (cria users padrão). |
 | `make test` | Roda a suíte completa de testes (Unit + Feature). |
-| `make race` | 🏎️ **Bônus:** Roda script de Stress Test para testar concorrência. |
+| `make race` | **Bônus:** Roda script de Stress Test para validar concorrência. |
 | `make check` | Roda Lint (Pint), Análise Estática (PHPStan) e Testes (CI local). |
 | `make logs` | Acompanha logs da aplicação e workers em tempo real. |
-| `make clean` | Derruba tudo e apaga volumes (hard reset) |
+| `make clean` | Derruba tudo e **apaga volumes** (hard reset). |
 
 ---
 
-## 🧪 Testes & Qualidade
+## ⚓️ Git Hooks & Qualidade
 
-O projeto possui cobertura de testes utilizando **Pest PHP**.
+Este projeto utiliza **CaptainHook** para garantir a qualidade do código antes mesmo do Code Review ("Shift Left").
+
+* **Commit Msg:** Valida se a mensagem segue o padrão *Conventional Commits* (ex: `feat: add login`).
+* **Pre-Commit:** Executa automaticamente `make lint-check` e `make analyse`. O commit é bloqueado se houver erros de estilo ou tipagem.
+* **Pre-Push:** Executa toda a suíte de testes (`make test`).
+
+> *Os hooks são instalados automaticamente ao rodar `make setup`.*
+
+---
+
+## 🧪 Testes Automatizados
+
+O projeto possui cobertura rigorosa utilizando **Pest PHP**.
 
 1. **Unitários:** Validam a matemática do Agregado (Domain) isoladamente.
 2. **Feature (E2E):** Validam o fluxo completo (Cadastro -> Depósito -> Transferência) e regras de negócio.
-3. **Análise Estática:** **PHPStan Nível 5** + Larastan para garantir tipagem forte e segurança.
+3. **Análise Estática:** **PHPStan Nível 5** + Larastan para garantir tipagem forte.
 4. **Stress Test:** Um script Bash (`tests/race_test.sh`) que dispara requisições paralelas via cURL para validar o sistema de Locks contra Race Conditions.
 
-Para rodar toda a suíte de qualidade:
+Para rodar o check-up completo:
 
 ```bash
 make check
@@ -109,7 +121,7 @@ Na raiz do projeto, encontra-se o arquivo **`insomnia_wallet_api.json`**.
 * `POST /auth/register` - Cria usuário e carteira.
 * `POST /auth/login` - Retorna Token.
 * `POST /auth/refresh` - Rotaciona token (Blacklist no anterior).
-* `POST /auth/webhook` - Configura URL para notificação de recebimento.
+* `POST /auth/webhook` - Configura URL para notificação.
 
 #### Wallet
 
@@ -127,7 +139,7 @@ Na raiz do projeto, encontra-se o arquivo **`insomnia_wallet_api.json`**.
 
 O projeto conta com uma pipeline configurada em `.github/workflows/ci-cd.yml` que executa automaticamente em PRs para a `main`:
 
-1. **Build & Setup:** Sobe serviços (MySQL/Redis) em ambiente isolado.
+1. **Build & Setup:** Sobe serviços (MySQL/Redis).
 2. **Quality Gate:** Roda `Pint` (Lint) e `PHPStan` (Análise Estática).
 3. **Testing:** Executa a suíte `Pest` com banco de testes dedicado.
 4. **Delivery:** Se tudo passar, constrói a imagem Docker e publica no **GitHub Container Registry**.
@@ -176,4 +188,4 @@ sequenceDiagram
     API-->>Client: 200 OK
 ```
 
-**Autor:** [Marcelo Jr]
+**Autor:** Marcelo Jr
