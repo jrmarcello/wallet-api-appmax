@@ -1,5 +1,5 @@
 # Define que estes comandos não são arquivos físicos
-.PHONY: setup up down bash logs reset-db init-db test race lint lint-check analyse check clean-infra
+.PHONY: setup up down bash logs reset-db init-db test race lint lint-check analyse check clean help
 
 # --- 🚀 Setup & Infraestrutura ---
 
@@ -101,3 +101,25 @@ analyse:
 # Roda tudo (O comando "Antes do Push")
 check: lint analyse test
 	@echo "✅ Tudo certo! Pode commitar."
+
+# --- ℹ️ Ajuda ---
+
+help:
+	@echo "📖 Comandos disponíveis:"
+	@echo ""
+	@echo "🚀 Setup & Infra:"
+	@echo "  make setup      - Instalação completa (Docker, Composer, Migrations)"
+	@echo "  make reset-db   - Reseta banco de dados (Fresh migrations)"
+	@echo "  make clean      - Remove containers e volumes (Deep Clean)"
+	@echo "  make up         - Sobe containers (dettached)"
+	@echo "  make down       - Para containers"
+	@echo "  make logs       - Exibe logs dos containers"
+	@echo "  make bash       - Acessa terminal do container app"
+	@echo ""
+	@echo "🧪 Qualidade & Testes:"
+	@echo "  make test       - Roda testes (Pest)"
+	@echo "  make race       - Teste de concorrência (Race Condition)"
+	@echo "  make lint       - Formata código (Pint)"
+	@echo "  make analyse    - Análise estática (PHPStan)"
+	@echo "  make check      - Roda Lint + PHPStan + Testes (Pré-commit)"
+	@echo ""
