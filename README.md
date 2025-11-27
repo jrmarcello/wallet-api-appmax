@@ -70,6 +70,7 @@ Simplificamos a interação com o Docker através do `make`. Não é necessário
 
 | Comando | Descrição |
 | :--- | :--- |
+| `make help` | Lista todos os comandos disponíveis. |
 | `make setup` | **Primeiro uso.** Instala tudo do zero e configura o ambiente. |
 | `make up` | Sobe os containers (App, DB, Redis, Queue). |
 | `make down` | Para os containers. |
